@@ -16,6 +16,7 @@ then
 fi
 
 [ -n "${SOURCE_PATH}" ] || SOURCE_PATH="http://dl.fedoraproject.org/pub/"
+[ -n "${CACHE_DIR}" ] || CACHE_DIR="${TEMP_DIR}/fedora/$SUITE"
 
 dnf_install()
 {
@@ -32,6 +33,8 @@ do_install()
     is_archive "${SOURCE_PATH}" && return 0
 
     msg ":: Installing ${COMPONENT} ... "
+    
+    mkdir -p "${CACHE_DIR}"
 
     local core_packages="acl alternatives audit-libs basesystem bash brotli bzip2-libs ca-certificates coreutils coreutils-common cracklib crypto-policies cryptsetup-libs curl cyrus-sasl-lib dbus dbus-broker dbus-common device-mapper device-mapper-libs dnf dnf-data dnf-yum elfutils-default-yama-scope elfutils-libelf elfutils-libs expat fedora-gpg-keys fedora-release fedora-release-common fedora-repos file-libs filesystem findutils gawk gdbm-libs glib2 glibc glibc-common glibc-minimal-langpack gmp gnupg2 gnutls gpgme grep gzip ima-evm-utils iptables-libs json-c keyutils-libs kmod-libs krb5-libs libacl libarchive libargon2 libassuan libattr libblkid libcap libcap-ng libcom_err libcomps libcurl libdb libdb-utils libdnf libfdisk libffi libgcc libgcrypt libgpg-error libidn2 libksba libmetalink libmodulemd1 libmount libnghttp2 libnsl2 libpcap libpsl libpwquality librepo libreport-filesystem libseccomp libselinux libsemanage libsepol libsigsegv libsmartcols libsolv libssh libsss_idmap libsss_nss_idmap libstdc++ libtasn1 libtirpc libunistring libusbx libutempter libuuid libverto libxcrypt libxml2 libyaml libzstd lua-libs lz4-libs mpfr ncurses ncurses-base ncurses-libs nettle npth openldap openssl-libs p11-kit p11-kit-trust pam pcre pcre2 popt publicsuffix-list-dafsa python3 python3-dnf python3-gpg python3-hawkey python3-libcomps python3-libdnf python3-libs python3-rpm python-pip-wheel python-setuptools-wheel qrencode-libs readline rootfiles rpm rpm-build-libs rpm-libs rpm-sign-libs sed setup shadow-utils sqlite-libs sssd-client sudo systemd systemd-libs systemd-pam systemd-rpm-macros tar tzdata util-linux vim-minimal xz-libs zchunk-libs zlib"
 
@@ -71,11 +74,13 @@ do_install()
         # download
         for i in 1 2 3
         do
-            wget -q -c -O "${CHROOT_DIR}/tmp/${pkg_file}" "${repo_url}/${pkg_url}" && break
+            [ -f "${CACHE_DIR}/${pkg_file}" ] && break
+            wget -q -c -O "${CACHE_DIR}/${pkg_file}" "${repo_url}/${pkg_url}" && break
             sleep 30s
         done
         [ "${package}" = "filesystem" ] && { msg "done"; continue; }
         # unpack
+        cp "${CACHE_DIR}/${pkg_file}" "${CHROOT_DIR}/tmp/${pkg_file}"
         (cd "${CHROOT_DIR}"; rpm2cpio "./tmp/${pkg_file}" | cpio -idmu >/dev/null)
         is_ok "fail" "done" || return 1
     done

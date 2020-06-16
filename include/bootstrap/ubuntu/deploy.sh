@@ -22,6 +22,8 @@ then
     esac
 fi
 
+[ -n "${CACHE_DIR}" ] || CACHE_DIR="${TEMP_DIR}/deploy/ubuntu/$SUITE"
+
 apt_repository()
 {
     # Backup sources.list

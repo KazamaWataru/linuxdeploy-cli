@@ -15,6 +15,7 @@ then
 fi
 
 [ -n "${SOURCE_PATH}" ] || SOURCE_PATH="http://http.kali.org/kali/"
+[ -n "${CACHE_DIR}" ] || CACHE_DIR="${TEMP_DIR}/deploy/kail/$SUITE"
 
 do_help()
 {

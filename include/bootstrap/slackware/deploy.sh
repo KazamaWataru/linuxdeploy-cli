@@ -21,6 +21,8 @@ then
     esac
 fi
 
+[ -n "${CACHE_DIR}" ] || CACHE_DIR="${TEMP_DIR}/deploy/slackware/$SUITE"
+
 slackpkg_install()
 {
     local packages="$@"
@@ -62,7 +64,8 @@ do_install()
     x86_64) repo_url="${SOURCE_PATH%/}/slackware64-${SUITE}/slackware64" ;;
     esac
 
-    local cache_dir="${CHROOT_DIR}/tmp"
+    mkdir -p "${CACHE_DIR}"
+    
     local base_packages="l/glibc l/glibc-i18n l/libtermcap l/ncurses ap/diffutils ap/groff ap/man ap/slackpkg ap/sudo n/gnupg n/wget"
 
     msg -n "Preparing for deployment ... "
@@ -70,13 +73,12 @@ do_install()
         cd "${CHROOT_DIR}"
         mkdir etc
         touch etc/fstab
-        mkdir tmp; chmod 1777 tmp
     exit 0)
     is_ok "fail" "done" || return 1
 
     msg -n "Retrieving packages list ... "
     local core_packages=$(wget -q -O - "${repo_url}/a/tagfile" | grep -v -e 'kernel' -e 'efibootmgr' -e 'lilo' -e 'grub' -e 'devs' | awk -F: '{if ($1!="") print "a/"$1}')
-    local pkg_list="${cache_dir}/packages.list"
+    local pkg_list="${CACHE_DIR}/packages.list"
     wget -q -O - "${repo_url}/FILE_LIST" | grep -o -e '/.*\.\tgz$' -e '/.*\.\txz$' > "${pkg_list}"
     is_ok "fail" "done" || return 1
 
@@ -91,14 +93,14 @@ do_install()
         # download
         for i in 1 2 3
         do
-            wget -q -c -O "${cache_dir}/${pkg_file}" "${repo_url}${pkg_url}" && break
+            wget -q -c -O "${CACHE_DIR}/${pkg_file}" "${repo_url}${pkg_url}" && break
             sleep 30s
         done
         # unpack
         case "${pkg_file}" in
-        *gz) tar xzf "${cache_dir}/${pkg_file}" -C "${CHROOT_DIR}" --exclude='./dev' --exclude='./sys' --exclude='./proc';;
-        *bz2) tar xjf "${cache_dir}/${pkg_file}" -C "${CHROOT_DIR}" --exclude='./dev' --exclude='./sys' --exclude='./proc';;
-        *xz) tar xJf "${cache_dir}/${pkg_file}" -C "${CHROOT_DIR}" --exclude='./dev' --exclude='./sys' --exclude='./proc';;
+        *gz) tar xzf "${CACHE_DIR}/${pkg_file}" -C "${CHROOT_DIR}" --exclude='./dev' --exclude='./sys' --exclude='./proc';;
+        *bz2) tar xjf "${CACHE_DIR}/${pkg_file}" -C "${CHROOT_DIR}" --exclude='./dev' --exclude='./sys' --exclude='./proc';;
+        *xz) tar xJf "${CACHE_DIR}/${pkg_file}" -C "${CHROOT_DIR}" --exclude='./dev' --exclude='./sys' --exclude='./proc';;
         *) msg "fail"; return 1;;
         esac
         is_ok "fail" "done" || return 1
@@ -114,10 +116,6 @@ do_install()
     msg -n "Updating repository ... "
     slackpkg_repository
     is_ok "fail" "done"
-
-    msg -n "Clearing cache ... "
-    rm -f "${cache_dir}"/*
-    is_ok "skip" "done"
 
     return 0
 }

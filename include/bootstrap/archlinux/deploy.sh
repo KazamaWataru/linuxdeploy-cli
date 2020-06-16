@@ -21,6 +21,8 @@ then
     esac
 fi
 
+[ -n "${CACHE_DIR}" ] || CACHE_DIR="${TEMP_DIR}/deploy/arch"
+
 pacman_install()
 {
     local packages="$@"
@@ -63,8 +65,9 @@ do_install()
     esac
 
     msg -n "Preparing for deployment ... "
-    local cache_dir="${CHROOT_DIR}/var/cache/pacman/pkg"
-    mkdir -p "${cache_dir}"
+    
+    mkdir -p "${CACHE_DIR}"
+    
     is_ok "fail" "done" || return 1
 
     msg -n "Retrieving packages list ... "
@@ -80,11 +83,12 @@ do_install()
         local i
         for i in 1 2 3
         do
-            wget -q -c -O "${cache_dir}/${pkg_file}" "${repo_url}/${pkg_file}" && break
+            [ -f "${CACHE_DIR}/${pkg_file}" ] && break
+            wget -q -c -O "${CACHE_DIR}/${pkg_file}" "${repo_url}/${pkg_file}" && break
             sleep 30s
         done
         # unpack
-        tar xJf "${cache_dir}/${pkg_file}" -C "${CHROOT_DIR}" --exclude='./dev' --exclude='./sys' --exclude='./proc' --exclude='.INSTALL' --exclude='.MTREE' --exclude='.PKGINFO'
+        tar xJf "${CACHE_DIR}/${pkg_file}" -C "${CHROOT_DIR}" --exclude='./dev' --exclude='./sys' --exclude='./proc' --exclude='.INSTALL' --exclude='.MTREE' --exclude='.PKGINFO'
         is_ok "fail" "done" || return 1
     done
 
@@ -99,7 +103,7 @@ do_install()
     is_ok || return 1
 
     msg -n "Clearing cache ... "
-    rm -f "${cache_dir}"/* $(find "${CHROOT_DIR}/etc" -type f -name "*.pacnew")
+    rm -f "${CACHE_DIR}"/* $(find "${CHROOT_DIR}/etc" -type f -name "*.pacnew")
     is_ok "skip" "done"
 
     return 0
