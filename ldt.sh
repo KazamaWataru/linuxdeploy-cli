@@ -4,10 +4,6 @@ info() { echo "I: $@"; }; error() { echo "E: $@";exit 1; }
 
 if [ $(id -u) -ne 0 ]; then
 
-  # inatall deps
-  
-  info "exec in user"
-  
   missing=""
 
   [ -x "$(command -v ar)" ] || missing="binutils"
@@ -21,13 +17,7 @@ if [ $(id -u) -ne 0 ]; then
 
 fi
 
-info "exec in root"
-
 if [ "$LD_PRELOAD" != "/data/data/com.termux/files/usr/lib/libtermux-exec.so" ]; then
-
-  # switch into termux
-  
-  info "switch into termux"
 
   termuxEnv="env \
     HOME=/data/data/com.termux/files/home \
