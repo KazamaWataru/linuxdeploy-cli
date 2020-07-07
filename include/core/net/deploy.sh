@@ -9,16 +9,10 @@ do_configure()
     msg ":: Configuring ${COMPONENT} ... "
     local dns dns_list
     if [ -z "${DNS}" -o "${DNS}" = "auto" ]; then
-        if [ -n "$(which getprop)" ]; then
-            dns=$(getprop net.dns1)
-            [ -n "${dns}" ] && dns_list="${dns}"
-            dns=$(getprop net.dns2)
-            [ -n "${dns}" ] && dns_list="${dns_list} ${dns}"
-        fi
         if [ -z "${dns_list}" -a -e "/etc/resolv.conf" ]; then
             dns_list=$(grep "^nameserver" /etc/resolv.conf | awk '{print $2}')
         fi
-        [ -z "${dns_list}" ] && dns_list="8.8.8.8"
+        [ -z "${dns_list}" ] && dns_list="1.1.1.1 1.0.0.1"
     else
         dns_list="${DNS}"
     fi
